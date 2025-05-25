@@ -1,10 +1,13 @@
 #include "order_book.hpp"
 #include "position_tracker.hpp"
+#include "itch_parser.hpp"
+#include "scenario_runner.hpp"
 #include "types.hpp"
 #include <iostream>
 #include <chrono>
 #include <random>
 #include <iomanip>
+#include <filesystem>
 
 using namespace mm;
 
@@ -173,6 +176,135 @@ void test_market_making_scenario()
     print_position_stats(position_tracker);
 }
 
+void test_itch_data_processing()
+{
+    std::cout << "\n=== ITCH Data Processing Test ===" << std::endl;
+
+    OrderBookManager order_books;
+    PositionLimits limits;
+    limits.max_position_size = 100000;
+    limits.max_long_position = 50000;
+    limits.max_short_position = 50000;
+    PositionTracker position_tracker(limits);
+
+    ITCHParser parser(order_books, position_tracker);
+
+    std::string itch_file = "data/sample.itch";
+    if (!std::filesystem::exists(itch_file))
+    {
+        std::cout << "ITCH file not found: " << itch_file << std::endl;
+        std::cout << "Skipping ITCH data processing test." << std::endl;
+        return;
+    }
+
+    std::cout << "Processing ITCH file: " << itch_file << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    bool success = parser.parse_file(itch_file);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+    if (success)
+    {
+        auto stats = parser.get_stats();
+        std::cout << "ITCH Processing Results:" << std::endl;
+        std::cout << "  Total Messages: " << stats.total_messages << std::endl;
+        std::cout << "  Add Orders: " << stats.add_orders << std::endl;
+        std::cout << "  Executions: " << stats.executions << std::endl;
+        std::cout << "  Cancels: " << stats.cancels << std::endl;
+        std::cout << "  Deletes: " << stats.deletes << std::endl;
+        std::cout << "  Replaces: " << stats.replaces << std::endl;
+        std::cout << "  Trades: " << stats.trades << std::endl;
+        std::cout << "  Errors: " << stats.errors << std::endl;
+        std::cout << "  Processing Time: " << duration.count() << " ms" << std::endl;
+        std::cout << "  Throughput: " << (stats.total_messages * 1000.0 / duration.count()) << " messages/second" << std::endl;
+
+        // Print order book and position statistics
+        auto symbols = order_books.get_active_symbols();
+        std::cout << "  Active Symbols: " << symbols.size() << std::endl;
+
+        if (!symbols.empty())
+        {
+            SymbolId first_symbol = symbols[0];
+            const OrderBook *order_book = order_books.get_order_book(first_symbol);
+            if (order_book)
+            {
+                print_order_book_stats(*order_book);
+            }
+        }
+
+        print_position_stats(position_tracker);
+    }
+    else
+    {
+        std::cout << "Failed to process ITCH file." << std::endl;
+    }
+}
+
+void test_scenario_runner()
+{
+    std::cout << "\n=== Scenario Runner Test ===" << std::endl;
+
+    OrderBookManager order_books;
+    PositionLimits limits;
+    limits.max_position_size = 100000;
+    limits.max_long_position = 50000;
+    limits.max_short_position = 50000;
+    PositionTracker position_tracker(limits);
+
+    ScenarioRunner runner(order_books, position_tracker);
+
+    std::string scenarios_dir = "data/matching";
+    if (!std::filesystem::exists(scenarios_dir))
+    {
+        std::cout << "Scenarios directory not found: " << scenarios_dir << std::endl;
+        std::cout << "Skipping scenario runner test." << std::endl;
+        return;
+    }
+
+    std::cout << "Running scenarios from: " << scenarios_dir << std::endl;
+
+    auto results = runner.run_all_scenarios(scenarios_dir);
+
+    std::cout << "Scenario Results:" << std::endl;
+    std::cout << "  Total Scenarios: " << results.size() << std::endl;
+
+    size_t passed = 0;
+    size_t failed = 0;
+    double total_time = 0;
+
+    for (const auto &result : results)
+    {
+        if (result.passed)
+        {
+            passed++;
+        }
+        else
+        {
+            failed++;
+            std::cout << "  FAILED: " << result.scenario_name << " - " << result.error_message << std::endl;
+        }
+        total_time += result.execution_time_ms;
+    }
+
+    std::cout << "  Passed: " << passed << std::endl;
+    std::cout << "  Failed: " << failed << std::endl;
+    std::cout << "  Total Execution Time: " << total_time << " ms" << std::endl;
+    std::cout << "  Average Execution Time: " << (total_time / results.size()) << " ms" << std::endl;
+
+    // Print detailed results for first few scenarios
+    std::cout << "\nDetailed Results (first 3 scenarios):" << std::endl;
+    for (size_t i = 0; i < std::min(size_t(3), results.size()); ++i)
+    {
+        const auto &result = results[i];
+        std::cout << "  " << result.scenario_name << ":" << std::endl;
+        std::cout << "    Status: " << (result.passed ? "PASSED" : "FAILED") << std::endl;
+        std::cout << "    Execution Time: " << result.execution_time_ms << " ms" << std::endl;
+        std::cout << "    Orders Processed: " << result.orders_processed << std::endl;
+        std::cout << "    Trades Executed: " << result.trades_executed << std::endl;
+    }
+}
+
 int main()
 {
     std::cout << "Memory Market Maker - C++20 Implementation" << std::endl;
@@ -186,6 +318,12 @@ int main()
         // Run performance benchmarks
         benchmark_order_book_operations();
         benchmark_position_tracker();
+
+        // Test ITCH data processing
+        test_itch_data_processing();
+
+        // Test scenario runner
+        test_scenario_runner();
 
         std::cout << "\n=== All tests completed successfully! ===" << std::endl;
     }

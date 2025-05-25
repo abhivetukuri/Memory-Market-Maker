@@ -134,17 +134,65 @@ limits.max_drawdown = 500000;         // Maximum drawdown (in ticks)
 
 ## Testing
 
-The project includes comprehensive tests:
+The project includes comprehensive testing capabilities for both unit tests and real market data processing:
+
+### Unit Tests
+
+```bash
+# Run all unit tests
+make test
+./memory_market_maker_tests
+
+# Run individual test files
+make tests/test_order_book.o
+make tests/test_position_tracker.o
+make tests/test_memory_pool.o
+make tests/test_data_processing.o
+```
+
+### Data Processing Tests
+
+The project now supports testing with real market data:
+
+#### ITCH Data Processing
+- **NASDAQ TotalView-ITCH format** support for real market data
+- High-performance binary message parsing
+- Support for all major ITCH message types (orders, executions, cancels, trades)
+- Automatic symbol mapping and price conversion
+- Performance statistics and throughput measurement
+
+#### Scenario Testing
+- **Systematic testing** using scenario files in `data/matching/`
+- Support for complex order book scenarios
+- Market order execution with slippage
+- Position tracking and P&L calculation
+- Performance benchmarking
+
+### Test Runner Script
+
+Use the provided test runner script for easy testing:
 
 ```bash
 # Run all tests
-make test
+./run_tests.sh
 
-# Run specific test suites
-./memory_market_maker_tests --gtest_filter=OrderBookTest.*
-./memory_market_maker_tests --gtest_filter=PositionTrackerTest.*
-./memory_market_maker_tests --gtest_filter=MemoryPoolTest.*
+# Run specific test types
+./run_tests.sh build      # Build only
+./run_tests.sh unit       # Unit tests only
+./run_tests.sh main       # Main program tests
+./run_tests.sh itch       # ITCH data processing
+./run_tests.sh scenarios  # Scenario testing
+./run_tests.sh performance # Performance benchmarks
 ```
+
+### Data Files
+
+The project expects the following data files for testing:
+
+- `data/sample.itch` - NASDAQ ITCH market data file
+- `data/matching/` - Directory containing scenario files (scenario-01.txt, scenario-02.txt, etc.)
+
+If these files are not present, the corresponding tests will be skipped with appropriate warnings.
 
 ## Future Enhancements
 

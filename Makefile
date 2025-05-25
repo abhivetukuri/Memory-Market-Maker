@@ -5,7 +5,8 @@ DEBUGFLAGS = -std=c++20 -O0 -g -Wall -Wextra -Iinclude
 # Source files
 SOURCES = src/main.cpp src/order_book.cpp src/position_tracker.cpp \
           src/memory_pool.cpp src/mmap_manager.cpp src/market_maker.cpp \
-          src/strategy.cpp src/pl_calculator.cpp
+          src/strategy.cpp src/pl_calculator.cpp src/itch_parser.cpp \
+          src/scenario_runner.cpp
 
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -14,7 +15,7 @@ OBJECTS = $(SOURCES:.cpp=.o)
 TARGET = memory_market_maker
 
 # Test sources
-TEST_SOURCES = tests/test_order_book.cpp tests/test_position_tracker.cpp tests/test_memory_pool.cpp
+TEST_SOURCES = tests/test_order_book.cpp tests/test_position_tracker.cpp tests/test_memory_pool.cpp tests/test_data_processing.cpp
 TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
 TEST_TARGET = memory_market_maker_tests
 
@@ -32,8 +33,8 @@ $(TARGET): $(OBJECTS)
 # Test executable
 test: $(TEST_TARGET)
 
-$(TEST_TARGET): $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o
-	$(CXX) $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o -o $(TEST_TARGET) -lpthread
+$(TEST_TARGET): $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o
+	$(CXX) $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o -o $(TEST_TARGET) -lpthread
 
 # Compile source files
 %.o: %.cpp
@@ -62,6 +63,8 @@ uninstall:
 # Dependencies
 src/order_book.o: include/order_book.hpp include/memory_pool.hpp include/types.hpp
 src/position_tracker.o: include/position_tracker.hpp include/types.hpp
-src/main.o: include/order_book.hpp include/position_tracker.hpp include/types.hpp
+src/main.o: include/order_book.hpp include/position_tracker.hpp include/itch_parser.hpp include/scenario_runner.hpp include/types.hpp
+src/itch_parser.o: include/itch_parser.hpp include/order_book.hpp include/position_tracker.hpp include/types.hpp
+src/scenario_runner.o: include/scenario_runner.hpp include/order_book.hpp include/position_tracker.hpp include/types.hpp
 
 .PHONY: all debug test clean run-tests run install uninstall 
