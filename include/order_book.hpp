@@ -192,6 +192,12 @@ namespace mm
          * Remove order from price level
          */
         void remove_order_from_level(Order *order);
+
+        // Private helper methods (non-locking versions for internal use)
+        std::pair<Price, Quantity> get_best_bid_internal() const;
+        std::pair<Price, Quantity> get_best_ask_internal() const;
+        Price get_mid_price_internal() const;
+        Price get_spread_internal() const;
     };
 
     /**

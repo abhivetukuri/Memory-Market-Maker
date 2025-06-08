@@ -238,7 +238,17 @@ namespace mm
     std::pair<Price, Quantity> OrderBook::get_best_bid() const
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        return get_best_bid_internal();
+    }
 
+    std::pair<Price, Quantity> OrderBook::get_best_ask() const
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return get_best_ask_internal();
+    }
+
+    std::pair<Price, Quantity> OrderBook::get_best_bid_internal() const
+    {
         if (bids_.empty())
         {
             return {0, 0};
@@ -248,10 +258,8 @@ namespace mm
         return {level->price, level->total_quantity};
     }
 
-    std::pair<Price, Quantity> OrderBook::get_best_ask() const
+    std::pair<Price, Quantity> OrderBook::get_best_ask_internal() const
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-
         if (asks_.empty())
         {
             return {0, 0};
@@ -274,10 +282,36 @@ namespace mm
         return (bid_price + ask_price) / 2;
     }
 
+    Price OrderBook::get_mid_price_internal() const
+    {
+        auto [bid_price, bid_qty] = get_best_bid_internal();
+        auto [ask_price, ask_qty] = get_best_ask_internal();
+
+        if (bid_price == 0 || ask_price == 0)
+        {
+            return 0;
+        }
+
+        return (bid_price + ask_price) / 2;
+    }
+
     Price OrderBook::get_spread() const
     {
         auto [bid_price, bid_qty] = get_best_bid();
         auto [ask_price, ask_qty] = get_best_ask();
+
+        if (bid_price == 0 || ask_price == 0)
+        {
+            return 0;
+        }
+
+        return ask_price - bid_price;
+    }
+
+    Price OrderBook::get_spread_internal() const
+    {
+        auto [bid_price, bid_qty] = get_best_bid_internal();
+        auto [ask_price, ask_qty] = get_best_ask_internal();
 
         if (bid_price == 0 || ask_price == 0)
         {
@@ -337,8 +371,8 @@ namespace mm
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        auto [best_bid_price, best_bid_qty] = get_best_bid();
-        auto [best_ask_price, best_ask_qty] = get_best_ask();
+        auto [best_bid_price, best_bid_qty] = get_best_bid_internal();
+        auto [best_ask_price, best_ask_qty] = get_best_ask_internal();
 
         return Stats{
             .total_orders = orders_.size(),
@@ -349,8 +383,8 @@ namespace mm
             .ask_levels = asks_.size(),
             .best_bid = best_bid_price,
             .best_ask = best_ask_price,
-            .mid_price = get_mid_price(),
-            .spread = get_spread()};
+            .mid_price = get_mid_price_internal(),
+            .spread = get_spread_internal()};
     }
 
     PriceLevel *OrderBook::get_or_create_level(Price price, OrderSide side)

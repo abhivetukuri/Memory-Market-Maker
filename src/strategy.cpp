@@ -73,7 +73,7 @@ namespace mm
             auto &s = state_[i];
             // Get inventory for this symbol
             const Position *pos = positions.get_position(symbol);
-            Quantity inv = pos ? pos->net_position : 0;
+            Quantity inv = pos ? pos->get_net_position() : 0;
             s.inventory = inv;
             // Skew mid price based on inventory
             double skew = double(inv) / double(config_.max_inventory);
