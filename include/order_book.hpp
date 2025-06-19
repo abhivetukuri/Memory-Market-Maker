@@ -11,10 +11,6 @@
 namespace mm
 {
 
-    /**
-     * Price level in the order book
-     * Contains aggregated quantity at a specific price
-     */
     struct alignas(ALIGNMENT) PriceLevel
     {
         Price price;
@@ -26,9 +22,6 @@ namespace mm
         PriceLevel(Price p, Quantity q) : price(p), total_quantity(q), order_count(1), last_update(get_timestamp()) {}
     };
 
-    /**
-     * Individual order in the order book
-     */
     struct alignas(ALIGNMENT) Order
     {
         OrderId id;
@@ -40,103 +33,40 @@ namespace mm
         OrderType type;
         OrderStatus status;
         Timestamp timestamp;
-        PriceLevel *level; // Pointer to associated price level
+        PriceLevel *level;
 
         Order() : id(0), symbol(0), price(0), quantity(0), filled_quantity(0),
                   side(OrderSide::BUY), type(OrderType::LIMIT), status(OrderStatus::PENDING),
                   timestamp(0), level(nullptr) {}
     };
 
-    /**
-     * High-performance order book using memory pools
-     * Supports microsecond quote updates with no heap allocations
-     */
+    // Supports microsecond quote updates with no heap allocations
     class OrderBook
     {
     public:
         explicit OrderBook(SymbolId symbol);
         ~OrderBook() = default;
 
-        // Non-copyable, non-movable
         OrderBook(const OrderBook &) = delete;
         OrderBook &operator=(const OrderBook &) = delete;
         OrderBook(OrderBook &&) = delete;
         OrderBook &operator=(OrderBook &&) = delete;
 
-        /**
-         * Add a new order to the book
-         */
         bool add_order(OrderId order_id, Price price, Quantity quantity, OrderSide side, OrderType type = OrderType::LIMIT);
-
-        /**
-         * Cancel an order
-         */
         bool cancel_order(OrderId order_id, Quantity quantity = 0);
-
-        /**
-         * Modify an existing order
-         */
         bool modify_order(OrderId order_id, Price new_price, Quantity new_quantity);
-
-        /**
-         * Execute a trade (fill orders)
-         */
         bool execute_trade(Price price, Quantity quantity, OrderSide side);
-
-        /**
-         * Get best bid price and quantity
-         */
         std::pair<Price, Quantity> get_best_bid() const;
-
-        /**
-         * Get best ask price and quantity
-         */
         std::pair<Price, Quantity> get_best_ask() const;
-
-        /**
-         * Get mid price
-         */
         Price get_mid_price() const;
-
-        /**
-         * Get spread
-         */
         Price get_spread() const;
-
-        /**
-         * Get order book depth
-         */
         std::vector<std::pair<Price, Quantity>> get_bids(size_t depth = MAX_ORDER_BOOK_DEPTH) const;
         std::vector<std::pair<Price, Quantity>> get_asks(size_t depth = MAX_ORDER_BOOK_DEPTH) const;
-
-        /**
-         * Get order by ID
-         */
         const Order *get_order(OrderId order_id) const;
-
-        /**
-         * Get symbol ID
-         */
         SymbolId get_symbol() const { return symbol_; }
-
-        /**
-         * Check if order book is empty
-         */
         bool empty() const { return bids_.empty() && asks_.empty(); }
-
-        /**
-         * Get total number of orders
-         */
         size_t order_count() const { return orders_.size(); }
-
-        /**
-         * Get total number of price levels
-         */
         size_t level_count() const { return bids_.size() + asks_.size(); }
-
-        /**
-         * Get order book statistics
-         */
         struct Stats
         {
             size_t total_orders;
@@ -154,105 +84,44 @@ namespace mm
     private:
         SymbolId symbol_;
 
-        // Price level maps (price -> PriceLevel*)
         std::map<Price, PriceLevel *, std::greater<Price>> bids_; // Descending for bids
-        std::map<Price, PriceLevel *, std::less<Price>> asks_;    // Ascending for asks
-
-        // Order storage
+        std::map<Price, PriceLevel *, std::less<Price>> asks_; // Ascending for asks
         std::map<OrderId, Order *> orders_;
-
-        // Memory pools
         MemoryPool<Order> order_pool_;
         MemoryPool<PriceLevel> level_pool_;
-
-        // Thread safety
         mutable std::mutex mutex_;
 
-        /**
-         * Find or create price level
-         */
         PriceLevel *get_or_create_level(Price price, OrderSide side);
-
-        /**
-         * Remove price level if empty
-         */
         void remove_empty_level(Price price, OrderSide side);
-
-        /**
-         * Update price level statistics
-         */
         void update_level_stats(PriceLevel *level, Quantity delta, bool add_order);
-
-        /**
-         * Find order by ID
-         */
         Order *find_order(OrderId order_id);
-
-        /**
-         * Remove order from price level
-         */
         void remove_order_from_level(Order *order);
 
-        // Private helper methods (non-locking versions for internal use)
+        // Non-locking versions for internal use
         std::pair<Price, Quantity> get_best_bid_internal() const;
         std::pair<Price, Quantity> get_best_ask_internal() const;
         Price get_mid_price_internal() const;
         Price get_spread_internal() const;
     };
 
-    /**
-     * Order book manager for multiple symbols
-     */
     class OrderBookManager
     {
     public:
         OrderBookManager();
         ~OrderBookManager() = default;
 
-        // Non-copyable, non-movable
         OrderBookManager(const OrderBookManager &) = delete;
         OrderBookManager &operator=(const OrderBookManager &) = delete;
         OrderBookManager(OrderBookManager &&) = delete;
         OrderBookManager &operator=(OrderBookManager &&) = delete;
 
-        /**
-         * Get or create order book for symbol
-         */
         OrderBook *get_order_book(SymbolId symbol);
-
-        /**
-         * Add order to specific symbol
-         */
         bool add_order(SymbolId symbol, OrderId order_id, Price price, Quantity quantity, OrderSide side, OrderType type = OrderType::LIMIT);
-
-        /**
-         * Cancel order
-         */
         bool cancel_order(SymbolId symbol, OrderId order_id, Quantity quantity = 0);
-
-        /**
-         * Modify order
-         */
         bool modify_order(SymbolId symbol, OrderId order_id, Price new_price, Quantity new_quantity);
-
-        /**
-         * Execute trade
-         */
         bool execute_trade(SymbolId symbol, Price price, Quantity quantity, OrderSide side);
-
-        /**
-         * Get order book for symbol
-         */
         const OrderBook *get_order_book(SymbolId symbol) const;
-
-        /**
-         * Get all active symbols
-         */
         std::vector<SymbolId> get_active_symbols() const;
-
-        /**
-         * Get total number of order books
-         */
         size_t order_book_count() const { return order_books_.size(); }
 
     private:

@@ -8,31 +8,26 @@
 namespace mm
 {
 
-    // Core types
     using SymbolId = uint16_t;
     using OrderId = uint64_t;
     using Price = int64_t; // Price in ticks (1/10000 of a cent for precision)
     using Quantity = uint32_t;
-    using Timestamp = uint64_t;   // Nanoseconds since epoch
+    using Timestamp = uint64_t; // Nanoseconds since epoch
     using PositionSize = int64_t; // Can be negative for short positions
-    using PnL = int64_t;          // Profit/Loss in ticks
+    using PnL = int64_t; // Profit/Loss in ticks
 
-    // Constants
     constexpr size_t MAX_SYMBOLS = 10000;
     constexpr size_t MAX_ORDERS = 1000000;
     constexpr size_t MAX_LEVELS_PER_SIDE = 1000;
     constexpr size_t MAX_ORDER_BOOK_DEPTH = 50;
 
-    // Price constants
     constexpr Price PRICE_TICK_SIZE = 1;
     constexpr Price MAX_PRICE = std::numeric_limits<Price>::max() / 2;
     constexpr Price MIN_PRICE = -MAX_PRICE;
 
-    // Memory alignment for cache performance
     constexpr size_t CACHE_LINE_SIZE = 64;
     constexpr size_t ALIGNMENT = CACHE_LINE_SIZE;
 
-    // Order types
     enum class OrderSide : uint8_t
     {
         BUY = 0,
@@ -55,7 +50,6 @@ namespace mm
         REJECTED = 4
     };
 
-    // Market maker strategy types
     enum class StrategyType : uint8_t
     {
         BASIC_SPREAD = 0,
@@ -64,7 +58,6 @@ namespace mm
         MOMENTUM = 3
     };
 
-    // Performance metrics
     struct PerformanceMetrics
     {
         Timestamp timestamp;
@@ -76,7 +69,6 @@ namespace mm
         double throughput_ops_per_sec;
     };
 
-    // Utility functions
     inline constexpr Price price_from_dollars(double dollars)
     {
         return static_cast<Price>(dollars * 10000.0);
@@ -94,7 +86,6 @@ namespace mm
             .count();
     }
 
-    // Memory pool statistics
     struct PoolStats
     {
         size_t total_allocated;

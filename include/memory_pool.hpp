@@ -9,10 +9,7 @@
 namespace mm
 {
 
-    /**
-     * Fixed-size memory pool for high-performance allocation
-     * Eliminates heap allocations for microsecond quote updates
-     */
+    // Eliminates heap allocations for microsecond quote updates
     template <typename T>
     class MemoryPool
     {
@@ -25,16 +22,12 @@ namespace mm
 
         ~MemoryPool() = default;
 
-        // Non-copyable, non-movable
         MemoryPool(const MemoryPool &) = delete;
         MemoryPool &operator=(const MemoryPool &) = delete;
         MemoryPool(MemoryPool &&) = delete;
         MemoryPool &operator=(MemoryPool &&) = delete;
 
-        /**
-         * Allocate a new object from the pool
-         * Returns pointer to uninitialized memory
-         */
+        // Returns pointer to uninitialized memory
         T *allocate()
         {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -46,7 +39,6 @@ namespace mm
                 return ptr;
             }
 
-            // Need to allocate more memory
             if (allocated_count_ >= capacity_)
             {
                 size_t new_capacity = capacity_ * 2;
@@ -58,19 +50,13 @@ namespace mm
             return ptr;
         }
 
-        /**
-         * Return an object to the pool
-         * Object is not destroyed, just marked as available
-         */
+        // Object is not destroyed, just marked as available
         void deallocate(T *ptr)
         {
             std::lock_guard<std::mutex> lock(mutex_);
             free_list_.push(ptr);
         }
 
-        /**
-         * Get pool statistics
-         */
         PoolStats get_stats() const
         {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -83,9 +69,6 @@ namespace mm
                 .free_count = free_list_.size()};
         }
 
-        /**
-         * Reset the pool (mark all objects as free)
-         */
         void reset()
         {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -96,17 +79,11 @@ namespace mm
             allocated_count_ = 0;
         }
 
-        /**
-         * Get current capacity
-         */
         size_t capacity() const
         {
             return capacity_;
         }
 
-        /**
-         * Get current usage
-         */
         size_t usage() const
         {
             std::lock_guard<std::mutex> lock(mutex_);
@@ -128,9 +105,6 @@ namespace mm
         size_t peak_usage_;
     };
 
-    /**
-     * Thread-local memory pool for lock-free allocation
-     */
     template <typename T>
     class ThreadLocalPool
     {
