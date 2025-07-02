@@ -14,7 +14,7 @@ namespace mm
         }
     }
 
-    void FixedSpreadStrategy::update_quotes(OrderBookManager &order_books, PositionTracker &positions, Timestamp now)
+    void FixedSpreadStrategy::update_quotes(OrderBookManager &order_books, PositionTracker &, Timestamp)
     {
         for (size_t i = 0; i < config_.num_symbols; ++i)
         {
@@ -65,7 +65,7 @@ namespace mm
         }
     }
 
-    void InventorySkewedStrategy::update_quotes(OrderBookManager &order_books, PositionTracker &positions, Timestamp now)
+    void InventorySkewedStrategy::update_quotes(OrderBookManager &order_books, PositionTracker &positions, Timestamp)
     {
         for (size_t i = 0; i < config_.num_symbols; ++i)
         {
@@ -105,12 +105,12 @@ namespace mm
         }
     }
 
-    void InventorySkewedStrategy::on_trade(SymbolId symbol, Price price, Quantity qty, OrderSide side, Timestamp now)
+    void InventorySkewedStrategy::on_trade(SymbolId, Price, Quantity, OrderSide, Timestamp)
     {
         // No-op for now; could be used for advanced logic
     }
 
-    void InventorySkewedStrategy::on_position_update(SymbolId symbol, const Position &pos, const PositionTracker::Stats &stats, Timestamp now)
+    void InventorySkewedStrategy::on_position_update(SymbolId, const Position &, const PositionTracker::Stats &, Timestamp)
     {
         // No-op for now; could be used for advanced logic
     }

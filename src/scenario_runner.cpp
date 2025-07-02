@@ -315,7 +315,7 @@ namespace mm
         return command;
     }
 
-    bool ScenarioRunner::execute_enable_matching(const std::vector<std::string> &args)
+    bool ScenarioRunner::execute_enable_matching(const std::vector<std::string> &)
     {
         matching_enabled_ = true;
         return true;
@@ -339,7 +339,7 @@ namespace mm
         if (!validate_args(args, 1, "delete symbol"))
             return false;
 
-        SymbolId symbol_id = parse_number<SymbolId>(args[0]);
+        (void)parse_number<SymbolId>(args[0]);
         // Note: OrderBookManager doesn't have delete functionality yet
         return true;
     }
@@ -359,7 +359,7 @@ namespace mm
         if (!validate_args(args, 1, "delete book"))
             return false;
 
-        SymbolId symbol_id = parse_number<SymbolId>(args[0]);
+        (void)parse_number<SymbolId>(args[0]);
         // Note: OrderBookManager doesn't have delete functionality yet
         return true;
     }
@@ -451,8 +451,8 @@ namespace mm
         if (!validate_args(args, 3, "reduce order"))
             return false;
 
-        OrderId order_id = parse_number<OrderId>(args[0]);
-        Quantity quantity = parse_number<Quantity>(args[1]);
+        (void)parse_number<OrderId>(args[0]);
+        (void)parse_number<Quantity>(args[1]);
 
         // Find the order and reduce it
         // Note: This is simplified - we need to track orders by ID
@@ -464,9 +464,9 @@ namespace mm
         if (!validate_args(args, 4, "modify order"))
             return false;
 
-        OrderId order_id = parse_number<OrderId>(args[0]);
-        Price new_price = parse_number<Price>(args[1]);
-        Quantity new_quantity = parse_number<Quantity>(args[2]);
+        (void)parse_number<OrderId>(args[0]);
+        (void)parse_number<Price>(args[1]);
+        (void)parse_number<Quantity>(args[2]);
 
         // Find the order and modify it
         // Note: This is simplified - we need to track orders by ID
@@ -478,10 +478,10 @@ namespace mm
         if (!validate_args(args, 5, "replace order"))
             return false;
 
-        OrderId old_order_id = parse_number<OrderId>(args[0]);
-        OrderId new_order_id = parse_number<OrderId>(args[1]);
-        Price new_price = parse_number<Price>(args[2]);
-        Quantity new_quantity = parse_number<Quantity>(args[3]);
+        (void)parse_number<OrderId>(args[0]);
+        (void)parse_number<OrderId>(args[1]);
+        (void)parse_number<Price>(args[2]);
+        (void)parse_number<Quantity>(args[3]);
 
         // Replace the order
         // Note: This is simplified - we need to track orders by ID
@@ -493,7 +493,7 @@ namespace mm
         if (!validate_args(args, 1, "delete order"))
             return false;
 
-        OrderId order_id = parse_number<OrderId>(args[0]);
+        (void)parse_number<OrderId>(args[0]);
 
         // Delete the order
         // Note: This is simplified - we need to track orders by ID

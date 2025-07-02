@@ -4,8 +4,7 @@ DEBUGFLAGS = -std=c++20 -O0 -g -Wall -Wextra -Iinclude
 
 # Source files
 SOURCES = src/main.cpp src/order_book.cpp src/position_tracker.cpp \
-          src/memory_pool.cpp src/mmap_manager.cpp src/market_maker.cpp \
-          src/strategy.cpp src/pl_calculator.cpp src/itch_parser.cpp \
+          src/memory_pool.cpp src/strategy.cpp src/itch_parser.cpp \
           src/scenario_runner.cpp
 
 # Object files
@@ -14,10 +13,11 @@ OBJECTS = $(SOURCES:.cpp=.o)
 # Target executable
 TARGET = memory_market_maker
 
-# Test sources
-TEST_SOURCES = tests/test_order_book.cpp tests/test_position_tracker.cpp tests/test_memory_pool.cpp tests/test_data_processing.cpp
-TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
-TEST_TARGET = memory_market_maker_tests
+# Test targets
+TEST_ORDER_BOOK = test_order_book
+TEST_POSITION_TRACKER = test_position_tracker
+TEST_MEMORY_POOL = test_memory_pool
+TEST_DATA_PROCESSING = test_data_processing
 
 # Default target
 all: $(TARGET)
@@ -30,11 +30,20 @@ debug: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $(TARGET) -lpthread
 
-# Test executable
-test: $(TEST_TARGET)
+# Test executables
+test: $(TEST_ORDER_BOOK) $(TEST_POSITION_TRACKER) $(TEST_MEMORY_POOL) $(TEST_DATA_PROCESSING)
 
-$(TEST_TARGET): $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o
-	$(CXX) $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o -o $(TEST_TARGET) -lpthread
+$(TEST_ORDER_BOOK): tests/test_order_book.o src/order_book.o src/memory_pool.o
+	$(CXX) tests/test_order_book.o src/order_book.o src/memory_pool.o -o $(TEST_ORDER_BOOK) -lpthread
+
+$(TEST_POSITION_TRACKER): tests/test_position_tracker.o src/position_tracker.o
+	$(CXX) tests/test_position_tracker.o src/position_tracker.o -o $(TEST_POSITION_TRACKER) -lpthread
+
+$(TEST_MEMORY_POOL): tests/test_memory_pool.o src/memory_pool.o
+	$(CXX) tests/test_memory_pool.o src/memory_pool.o -o $(TEST_MEMORY_POOL) -lpthread
+
+$(TEST_DATA_PROCESSING): tests/test_data_processing.o src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o
+	$(CXX) tests/test_data_processing.o src/order_book.o src/position_tracker.o src/memory_pool.o src/itch_parser.o src/scenario_runner.o -o $(TEST_DATA_PROCESSING) -lpthread
 
 # Compile source files
 %.o: %.cpp
@@ -42,11 +51,14 @@ $(TEST_TARGET): $(TEST_OBJECTS) src/order_book.o src/position_tracker.o src/memo
 
 # Clean
 clean:
-	rm -f $(OBJECTS) $(TEST_OBJECTS) $(TARGET) $(TEST_TARGET)
+	rm -f $(OBJECTS) tests/*.o $(TARGET) $(TEST_ORDER_BOOK) $(TEST_POSITION_TRACKER) $(TEST_MEMORY_POOL) $(TEST_DATA_PROCESSING)
 
 # Run tests
 run-tests: test
-	./$(TEST_TARGET)
+	./$(TEST_ORDER_BOOK)
+	./$(TEST_POSITION_TRACKER)
+	./$(TEST_MEMORY_POOL)
+	./$(TEST_DATA_PROCESSING)
 
 # Run main program
 run: $(TARGET)

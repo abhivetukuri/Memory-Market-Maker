@@ -44,16 +44,15 @@ void benchmark_order_book_operations()
 {
     std::cout << "\n=== Order Book Performance Benchmark ===" << std::endl;
 
-    OrderBook order_book(1); // Symbol 1
+    OrderBook order_book(1);
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<Price> price_dist(price_from_dollars(100.0), price_from_dollars(200.0));
+    std::uniform_int_distribution<Price> price_dist(price_from_dollars(100.0), price_from_dollars(101.0));
     std::uniform_int_distribution<Quantity> qty_dist(100, 1000);
     std::uniform_int_distribution<OrderId> order_id_dist(1, 1000000);
 
     const int num_operations = 100000;
 
-    // Benchmark add orders
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_operations; ++i)
     {
@@ -89,24 +88,33 @@ void benchmark_position_tracker()
     PositionTracker position_tracker(limits);
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<Price> price_dist(price_from_dollars(100.0), price_from_dollars(200.0));
     std::uniform_int_distribution<Quantity> qty_dist(100, 1000);
     std::uniform_int_distribution<OrderId> order_id_dist(1, 1000000);
     std::uniform_int_distribution<SymbolId> symbol_dist(1, 10);
 
     const int num_trades = 50000;
+    const Price base_price = price_from_dollars(100.0);
 
-    // Benchmark trade recording
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_trades; ++i)
     {
         SymbolId symbol = symbol_dist(gen);
-        Price price = price_dist(gen);
         Quantity qty = qty_dist(gen);
-        OrderSide side = (i % 2 == 0) ? OrderSide::BUY : OrderSide::SELL;
         OrderId order_id = order_id_dist(gen);
 
-        position_tracker.record_trade(symbol, price, qty, side, order_id);
+        // Simulate realistic market making: alternating buy/sell with small spread
+        if (i % 2 == 0)
+        {
+            // Buy at slightly lower price
+            Price buy_price = base_price - price_from_dollars(0.01);
+            position_tracker.record_trade(symbol, buy_price, qty, OrderSide::BUY, order_id);
+        }
+        else
+        {
+            // Sell at slightly higher price (profitable)
+            Price sell_price = base_price + price_from_dollars(0.02);
+            position_tracker.record_trade(symbol, sell_price, qty, OrderSide::SELL, order_id);
+        }
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -125,7 +133,6 @@ void test_market_making_scenario()
 {
     std::cout << "\n=== Market Making Scenario Test ===" << std::endl;
 
-    // Create order book and position tracker
     OrderBook order_book(1);
     PositionLimits limits;
     limits.max_position_size = 10000;
@@ -133,20 +140,16 @@ void test_market_making_scenario()
     limits.max_short_position = 5000;
     PositionTracker position_tracker(limits);
 
-    // Initial market making orders
     std::cout << "Placing initial market making orders..." << std::endl;
 
-    // Place bid at $100.00
     order_book.add_order(1, price_from_dollars(100.00), 1000, OrderSide::BUY);
     std::cout << "Placed bid: 1000 @ $100.00" << std::endl;
 
-    // Place ask at $100.10
     order_book.add_order(2, price_from_dollars(100.10), 1000, OrderSide::SELL);
     std::cout << "Placed ask: 1000 @ $100.10" << std::endl;
 
     print_order_book_stats(order_book);
 
-    // Simulate a trade against our bid
     std::cout << "\nSimulating trade against our bid..." << std::endl;
     bool executed = order_book.execute_trade(price_from_dollars(100.00), 500, OrderSide::SELL);
     if (executed)
@@ -158,7 +161,6 @@ void test_market_making_scenario()
     print_order_book_stats(order_book);
     print_position_stats(position_tracker);
 
-    // Simulate a trade against our ask
     std::cout << "\nSimulating trade against our ask..." << std::endl;
     executed = order_book.execute_trade(price_from_dollars(100.10), 300, OrderSide::BUY);
     if (executed)
@@ -170,7 +172,6 @@ void test_market_making_scenario()
     print_order_book_stats(order_book);
     print_position_stats(position_tracker);
 
-    // Update unrealized P&L with current market price
     std::cout << "\nUpdating unrealized P&L..." << std::endl;
     Price current_price = price_from_dollars(100.05); // Mid price
     position_tracker.update_unrealized_pnl(1, current_price);
@@ -221,7 +222,6 @@ void test_itch_data_processing()
         std::cout << "  Processing Time: " << duration.count() << " ms" << std::endl;
         std::cout << "  Throughput: " << (stats.total_messages * 1000.0 / duration.count()) << " messages/second" << std::endl;
 
-        // Print order book and position statistics
         auto symbols = order_books.get_active_symbols();
         std::cout << "  Active Symbols: " << symbols.size() << std::endl;
 
@@ -294,7 +294,6 @@ void test_scenario_runner()
     std::cout << "  Total Execution Time: " << total_time << " ms" << std::endl;
     std::cout << "  Average Execution Time: " << (total_time / results.size()) << " ms" << std::endl;
 
-    // Print detailed results for first few scenarios
     std::cout << "\nDetailed Results (first 3 scenarios):" << std::endl;
     for (size_t i = 0; i < std::min(size_t(3), results.size()); ++i)
     {
@@ -314,7 +313,6 @@ void test_strategy_simulation()
     constexpr size_t num_symbols = 2;
     std::array<SymbolId, MAX_STRATEGY_SYMBOLS> symbols = {1, 2};
 
-    // Use unique_ptr for resettable state
     std::unique_ptr<OrderBookManager> order_books = std::make_unique<OrderBookManager>();
     PositionLimits limits;
     limits.max_position_size = 10000;
@@ -322,7 +320,6 @@ void test_strategy_simulation()
     limits.max_short_position = 5000;
     std::unique_ptr<PositionTracker> position_tracker = std::make_unique<PositionTracker>(limits);
 
-    // Fixed spread strategy config
     FixedSpreadStrategy::Config fixed_cfg;
     fixed_cfg.base_price = price_from_dollars(100.00);
     fixed_cfg.spread = price_from_dollars(0.10);
@@ -331,7 +328,6 @@ void test_strategy_simulation()
     fixed_cfg.symbols = symbols;
     FixedSpreadStrategy fixed_strategy(fixed_cfg);
 
-    // Inventory-skewed strategy config
     InventorySkewedStrategy::Config inv_cfg;
     inv_cfg.base_price = price_from_dollars(100.00);
     inv_cfg.min_spread = price_from_dollars(0.05);
@@ -342,16 +338,13 @@ void test_strategy_simulation()
     inv_cfg.symbols = symbols;
     InventorySkewedStrategy inv_strategy(inv_cfg);
 
-    // Simulate a simple market for both strategies
     for (int strat = 0; strat < 2; ++strat)
     {
         std::cout << "\n--- Simulating " << (strat == 0 ? "FixedSpreadStrategy" : "InventorySkewedStrategy") << " ---" << std::endl;
-        // Reset state
         order_books = std::make_unique<OrderBookManager>();
         position_tracker = std::make_unique<PositionTracker>(limits);
         MarketMakingStrategy *strategy = (strat == 0) ? (MarketMakingStrategy *)&fixed_strategy : (MarketMakingStrategy *)&inv_strategy;
 
-        // Simulate 20 rounds of quoting and random trades
         std::mt19937 gen(42 + strat);
         std::uniform_int_distribution<int> symbol_dist(0, num_symbols - 1);
         std::uniform_real_distribution<double> trade_prob(0.0, 1.0);
@@ -360,7 +353,6 @@ void test_strategy_simulation()
         {
             Timestamp now = round * 1000000;
             strategy->update_quotes(*order_books, *position_tracker, now);
-            // Simulate random trades against our quotes
             for (size_t i = 0; i < num_symbols; ++i)
             {
                 SymbolId symbol = symbols[i];
@@ -369,7 +361,6 @@ void test_strategy_simulation()
                     continue;
                 auto [bid, bid_qty] = ob->get_best_bid();
                 auto [ask, ask_qty] = ob->get_best_ask();
-                // 50% chance of trade on each side
                 if (trade_prob(gen) < 0.5 && bid > 0)
                 {
                     Quantity qty = 10 + (gen() % 20);
@@ -384,7 +375,6 @@ void test_strategy_simulation()
                     position_tracker->record_trade(symbol, ask, qty, OrderSide::SELL, 200000 + round * 10 + i);
                     strategy->on_trade(symbol, ask, qty, OrderSide::SELL, now);
                 }
-                // Notify strategy of position update
                 const Position *pos = position_tracker->get_position(symbol);
                 if (pos)
                 {
@@ -392,7 +382,6 @@ void test_strategy_simulation()
                 }
             }
         }
-        // Print final stats
         for (size_t i = 0; i < num_symbols; ++i)
         {
             SymbolId symbol = symbols[i];
@@ -420,20 +409,15 @@ int main()
 
     try
     {
-        // Test basic functionality
         test_market_making_scenario();
 
-        // Run performance benchmarks
         benchmark_order_book_operations();
         benchmark_position_tracker();
 
-        // Test ITCH data processing
         test_itch_data_processing();
 
-        // Test scenario runner
         test_scenario_runner();
 
-        // Test market making strategies
         test_strategy_simulation();
 
         std::cout << "\n=== All tests completed successfully! ===" << std::endl;

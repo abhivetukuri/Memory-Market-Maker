@@ -34,11 +34,11 @@ namespace mm
             while (offset < bytes_read)
             {
                 if (offset + 2 > bytes_read)
-                    break; // Need at least length field
+                    break;
 
                 uint16_t message_length = (buffer[offset] << 8) | buffer[offset + 1];
                 if (offset + message_length > bytes_read)
-                    break; // Incomplete message
+                    break;
 
                 if (!process_message(&buffer[offset], message_length))
                 {
@@ -59,9 +59,9 @@ namespace mm
     bool ITCHParser::process_message(const uint8_t *data, size_t length)
     {
         if (length < 3)
-            return false; // Need at least type and length
+            return false;
 
-        uint16_t message_length = (data[0] << 8) | data[1];
+        (void)((data[0] << 8) | data[1]);
         uint8_t message_type = data[2];
 
         stats_.total_messages++;
@@ -92,7 +92,6 @@ namespace mm
             return parse_stock_directory(data, length);
 
         default:
-            // Skip other message types for now
             return true;
         }
     }
@@ -100,7 +99,7 @@ namespace mm
     bool ITCHParser::parse_add_order(const uint8_t *data, size_t length)
     {
         if (length < 36)
-            return false; // Minimum size for add order message
+            return false;
 
         AddOrderMessage msg;
         msg.type = static_cast<ITCHMessageType>(data[2]);
@@ -108,7 +107,6 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse fields based on ITCH specification
         msg.order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -142,7 +140,6 @@ namespace mm
             msg.has_mpid = false;
         }
 
-        // Convert to internal format and add order
         SymbolId symbol_id = get_symbol_id(msg.stock_locate);
         Price price = convert_price(msg.price);
         OrderSide side = (msg.buy_sell_indicator == 'B') ? OrderSide::BUY : OrderSide::SELL;
@@ -169,7 +166,6 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse order reference number
         msg.order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -177,7 +173,6 @@ namespace mm
         }
         offset += 8;
 
-        // Parse executed shares
         msg.executed_shares = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -185,16 +180,11 @@ namespace mm
         }
         offset += 4;
 
-        // Parse match number
         msg.match_number = 0;
         for (int i = 0; i < 8; i++)
         {
             msg.match_number = (msg.match_number << 8) | data[offset + i];
         }
-
-        // Find the order and update it
-        // Note: This is a simplified implementation
-        // In a real system, you'd need to track orders by reference number
 
         stats_.executions++;
         return true;
@@ -211,7 +201,6 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse order reference number
         msg.order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -219,15 +208,11 @@ namespace mm
         }
         offset += 8;
 
-        // Parse canceled shares
         msg.canceled_shares = 0;
         for (int i = 0; i < 4; i++)
         {
             msg.canceled_shares = (msg.canceled_shares << 8) | data[offset + i];
         }
-
-        // Cancel the order
-        // Note: This is a simplified implementation
 
         stats_.cancels++;
         return true;
@@ -244,15 +229,11 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse order reference number
         msg.order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
             msg.order_reference_number = (msg.order_reference_number << 8) | data[offset + i];
         }
-
-        // Delete the order
-        // Note: This is a simplified implementation
 
         stats_.deletes++;
         return true;
@@ -269,7 +250,6 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse original order reference number
         msg.original_order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -277,7 +257,6 @@ namespace mm
         }
         offset += 8;
 
-        // Parse new order reference number
         msg.new_order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -285,7 +264,6 @@ namespace mm
         }
         offset += 8;
 
-        // Parse shares
         msg.shares = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -293,15 +271,11 @@ namespace mm
         }
         offset += 4;
 
-        // Parse price
         msg.price = 0;
         for (int i = 0; i < 4; i++)
         {
             msg.price = (msg.price << 8) | data[offset + i];
         }
-
-        // Replace the order
-        // Note: This is a simplified implementation
 
         stats_.replaces++;
         return true;
@@ -318,7 +292,6 @@ namespace mm
 
         size_t offset = 3;
 
-        // Parse order reference number
         msg.order_reference_number = 0;
         for (int i = 0; i < 8; i++)
         {
@@ -328,7 +301,6 @@ namespace mm
 
         msg.buy_sell_indicator = data[offset++];
 
-        // Parse shares
         msg.shares = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -338,7 +310,6 @@ namespace mm
 
         msg.stock_locate = data[offset++];
 
-        // Parse price
         msg.price = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -346,14 +317,12 @@ namespace mm
         }
         offset += 4;
 
-        // Parse match number
         msg.match_number = 0;
         for (int i = 0; i < 8; i++)
         {
             msg.match_number = (msg.match_number << 8) | data[offset + i];
         }
 
-        // Record the trade
         SymbolId symbol_id = get_symbol_id(msg.stock_locate);
         Price price = convert_price(msg.price);
         OrderSide side = (msg.buy_sell_indicator == 'B') ? OrderSide::BUY : OrderSide::SELL;
@@ -378,18 +347,15 @@ namespace mm
         msg.stock_locate = data[offset++];
         msg.tracking_number = data[offset++];
 
-        // Parse timestamp
         std::memcpy(msg.timestamp, &data[offset], 6);
         offset += 6;
 
-        // Parse stock symbol
         std::memcpy(msg.stock, &data[offset], 8);
         offset += 8;
 
         msg.market_category = data[offset++];
         msg.financial_status_indicator = data[offset++];
 
-        // Parse lot size
         msg.lot_size = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -400,7 +366,6 @@ namespace mm
         msg.round_lots_only = data[offset++];
         msg.issue_classification = data[offset++];
 
-        // Parse issue subtype
         std::memcpy(msg.issue_subtype, &data[offset], 2);
         offset += 2;
 
@@ -410,7 +375,6 @@ namespace mm
         msg.luld_reference_price_tier = data[offset++];
         msg.etp_flag = data[offset++];
 
-        // Parse ETP leverage factor
         msg.etp_leverage_factor = 0;
         for (int i = 0; i < 4; i++)
         {
@@ -420,7 +384,6 @@ namespace mm
 
         msg.inverse_indicator = data[offset++];
 
-        // Create symbol mapping
         get_symbol_id(msg.stock_locate);
 
         return true;
@@ -441,25 +404,18 @@ namespace mm
 
     Price ITCHParser::convert_price(uint32_t itch_price)
     {
-        // ITCH prices are in 1/10000 of a cent
-        // Convert to our internal format (1/10000 of a dollar)
-        return static_cast<Price>(itch_price) * 100; // Convert cents to dollars
+        return static_cast<Price>(itch_price) * 100;
     }
 
     Timestamp ITCHParser::convert_timestamp(const uint8_t *itch_timestamp)
     {
-        // ITCH timestamps are in nanoseconds since midnight
-        // Convert to our internal format (nanoseconds since epoch)
-        // This is a simplified conversion - in practice you'd need the date
         uint64_t nanoseconds = 0;
         for (int i = 0; i < 6; i++)
         {
             nanoseconds = (nanoseconds << 8) | itch_timestamp[i];
         }
 
-        // For now, just return the nanoseconds part
-        // In a real implementation, you'd add the date component
         return nanoseconds;
     }
 
-} // namespace mm
+}

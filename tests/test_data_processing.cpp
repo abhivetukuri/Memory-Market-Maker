@@ -7,6 +7,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
+#include <random>
 
 using namespace mm;
 
@@ -146,12 +147,12 @@ void test_scenario_runner_individual()
 
         std::cout << "\nTesting scenario: " << scenario_name << std::endl;
 
-        // Reset for each scenario
-        order_books = OrderBookManager();
-        position_tracker = PositionTracker(limits);
-        runner = ScenarioRunner(order_books, position_tracker);
+        // Create new objects for each scenario
+        OrderBookManager new_order_books;
+        PositionTracker new_position_tracker(limits);
+        ScenarioRunner new_runner(new_order_books, new_position_tracker);
 
-        auto result = runner.run_scenario(filename);
+        auto result = new_runner.run_scenario(filename);
 
         std::cout << "  Status: " << (result.passed ? "PASSED" : "FAILED") << std::endl;
         std::cout << "  Execution Time: " << result.execution_time_ms << " ms" << std::endl;
@@ -213,12 +214,12 @@ void test_scenario_runner_performance()
 
     for (int i = 0; i < num_iterations; ++i)
     {
-        // Reset for each iteration
-        order_books = OrderBookManager();
-        position_tracker = PositionTracker(limits);
-        runner = ScenarioRunner(order_books, position_tracker);
+        // Create new objects for each iteration
+        OrderBookManager new_order_books;
+        PositionTracker new_position_tracker(limits);
+        ScenarioRunner new_runner(new_order_books, new_position_tracker);
 
-        auto results = runner.run_all_scenarios(scenarios_dir);
+        auto results = new_runner.run_all_scenarios(scenarios_dir);
 
         if (i == 0)
         {

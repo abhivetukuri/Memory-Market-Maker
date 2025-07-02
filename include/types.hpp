@@ -10,11 +10,11 @@ namespace mm
 
     using SymbolId = uint16_t;
     using OrderId = uint64_t;
-    using Price = int64_t; // Price in ticks (1/10000 of a cent for precision)
+    using Price = int64_t;
     using Quantity = uint32_t;
-    using Timestamp = uint64_t; // Nanoseconds since epoch
-    using PositionSize = int64_t; // Can be negative for short positions
-    using PnL = int64_t; // Profit/Loss in ticks
+    using Timestamp = uint64_t;
+    using PositionSize = int64_t;
+    using PnL = int64_t;
 
     constexpr size_t MAX_SYMBOLS = 10000;
     constexpr size_t MAX_ORDERS = 1000000;
