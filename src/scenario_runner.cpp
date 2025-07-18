@@ -27,15 +27,13 @@ namespace mm
 
         try
         {
-            // Parse scenario file
             auto commands = parse_scenario_file(filename);
 
-            // Execute commands
             for (const auto &command : commands)
             {
                 if (command.type == ScenarioCommandType::COMMENT)
                 {
-                    continue; // Skip comments
+                    continue;
                 }
 
                 if (!execute_command(command))
@@ -54,7 +52,6 @@ namespace mm
                 }
             }
 
-            // Collect final statistics
             auto symbols = order_books_.get_active_symbols();
             for (SymbolId symbol : symbols)
             {
@@ -76,7 +73,6 @@ namespace mm
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         result.execution_time_ms = duration.count();
 
-        // Update global stats
         stats_.total_scenarios++;
         if (result.passed)
         {
@@ -576,7 +572,6 @@ namespace mm
         {
             if constexpr (std::is_same_v<T, Price>)
             {
-                // Handle price conversion (e.g., "100.50" -> 1005000)
                 double price_dollars = std::stod(str);
                 return price_from_dollars(price_dollars);
             }
@@ -591,10 +586,9 @@ namespace mm
         }
     }
 
-    // Explicit template instantiations
     template Price ScenarioRunner::parse_number<Price>(const std::string &, Price);
     template Quantity ScenarioRunner::parse_number<Quantity>(const std::string &, Quantity);
     template OrderId ScenarioRunner::parse_number<OrderId>(const std::string &, OrderId);
     template SymbolId ScenarioRunner::parse_number<SymbolId>(const std::string &, SymbolId);
 
-} // namespace mm
+}

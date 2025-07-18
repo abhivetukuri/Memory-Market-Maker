@@ -6,9 +6,7 @@ namespace mm
 {
 
     OrderBook::OrderBook(SymbolId symbol)
-        : symbol_(symbol), order_pool_(10000) // Pre-allocate 10K orders
-          ,
-          level_pool_(1000) // Pre-allocate 1K price levels
+        : symbol_(symbol), order_pool_(10000), level_pool_(1000)
     {
     }
 
@@ -16,13 +14,11 @@ namespace mm
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        // Check if order already exists
         if (orders_.find(order_id) != orders_.end())
         {
             return false;
         }
 
-        // Allocate order from pool
         Order *order = order_pool_.allocate();
         order->id = order_id;
         order->symbol = symbol_;
@@ -34,13 +30,10 @@ namespace mm
         order->status = OrderStatus::ACTIVE;
         order->timestamp = get_timestamp();
 
-        // Get or create price level
         order->level = get_or_create_level(price, side);
 
-        // Add order to storage
         orders_[order_id] = order;
 
-        // Update level statistics
         update_level_stats(order->level, quantity, true);
 
         return true;
@@ -62,17 +55,14 @@ namespace mm
             cancel_qty = order->quantity - order->filled_quantity;
         }
 
-        // Update order
         order->filled_quantity += cancel_qty;
         if (order->filled_quantity >= order->quantity)
         {
             order->status = OrderStatus::FILLED;
         }
 
-        // Update level statistics
         update_level_stats(order->level, cancel_qty, false);
 
-        // Remove order if fully filled or cancelled
         if (order->status == OrderStatus::FILLED)
         {
             remove_order_from_level(order);
@@ -93,16 +83,13 @@ namespace mm
             return false;
         }
 
-        // Remove from current level
         Quantity old_remaining = order->quantity - order->filled_quantity;
         update_level_stats(order->level, old_remaining, false);
 
-        // Update order
         order->price = new_price;
         order->quantity = new_quantity;
         order->timestamp = get_timestamp();
 
-        // Add to new level
         order->level = get_or_create_level(new_price, order->side);
         update_level_stats(order->level, new_quantity - order->filled_quantity, true);
 
@@ -117,29 +104,24 @@ namespace mm
 
         if (side == OrderSide::BUY)
         {
-            // Buying - execute against asks
             if (asks_.empty())
             {
                 return false;
             }
 
-            // Execute against resting orders
             for (auto it = asks_.begin(); it != asks_.end() && remaining_qty > 0;)
             {
                 PriceLevel *level = it->second;
 
-                // Check if price is acceptable
                 if (level->price > price)
                 {
                     break;
                 }
 
-                // Execute against this level
                 Quantity execute_qty = std::min(remaining_qty, level->total_quantity);
                 level->total_quantity -= execute_qty;
                 remaining_qty -= execute_qty;
 
-                // Update orders at this level
                 for (auto &order_pair : orders_)
                 {
                     Order *order = order_pair.second;
@@ -161,7 +143,6 @@ namespace mm
                     }
                 }
 
-                // Remove empty level
                 if (level->total_quantity == 0)
                 {
                     it = asks_.erase(it);
@@ -175,29 +156,24 @@ namespace mm
         }
         else
         {
-            // Selling - execute against bids
             if (bids_.empty())
             {
                 return false;
             }
 
-            // Execute against resting orders
             for (auto it = bids_.begin(); it != bids_.end() && remaining_qty > 0;)
             {
                 PriceLevel *level = it->second;
 
-                // Check if price is acceptable
                 if (level->price < price)
                 {
                     break;
                 }
 
-                // Execute against this level
                 Quantity execute_qty = std::min(remaining_qty, level->total_quantity);
                 level->total_quantity -= execute_qty;
                 remaining_qty -= execute_qty;
 
-                // Update orders at this level
                 for (auto &order_pair : orders_)
                 {
                     Order *order = order_pair.second;
@@ -219,7 +195,6 @@ namespace mm
                     }
                 }
 
-                // Remove empty level
                 if (level->total_quantity == 0)
                 {
                     it = bids_.erase(it);
@@ -232,7 +207,7 @@ namespace mm
             }
         }
 
-        return remaining_qty < quantity; // Return true if any execution occurred
+        return remaining_qty < quantity;
     }
 
     std::pair<Price, Quantity> OrderBook::get_best_bid() const
@@ -397,7 +372,6 @@ namespace mm
                 return it->second;
             }
 
-            // Create new level
             PriceLevel *level = level_pool_.allocate();
             level->price = price;
             level->total_quantity = 0;
@@ -415,7 +389,6 @@ namespace mm
                 return it->second;
             }
 
-            // Create new level
             PriceLevel *level = level_pool_.allocate();
             level->price = price;
             level->total_quantity = 0;
@@ -480,8 +453,6 @@ namespace mm
         }
     }
 
-    // OrderBookManager implementation
-
     OrderBookManager::OrderBookManager() = default;
 
     OrderBook *OrderBookManager::get_order_book(SymbolId symbol)
@@ -494,7 +465,6 @@ namespace mm
             return it->second.get();
         }
 
-        // Create new order book
         auto order_book = std::make_unique<OrderBook>(symbol);
         OrderBook *ptr = order_book.get();
         order_books_[symbol] = std::move(order_book);
@@ -513,7 +483,6 @@ namespace mm
         if (!order_book)
             return false;
 
-        // Need to cast away const for modification
         return const_cast<OrderBook *>(order_book)->cancel_order(order_id, quantity);
     }
 
@@ -558,4 +527,4 @@ namespace mm
         return symbols;
     }
 
-} // namespace mm
+}

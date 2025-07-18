@@ -18,13 +18,10 @@ namespace mm
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        // Record trade in history
         trade_history_[symbol].emplace_back(symbol, price, quantity, side, order_id);
 
-        // Update position
         update_position(symbol, price, quantity, side);
 
-        // Calculate realized P&L
         PnL realized_pnl = calculate_realized_pnl(symbol, price, quantity, side);
         positions_[symbol].realized_pnl += realized_pnl;
 
@@ -108,7 +105,6 @@ namespace mm
         auto it = positions_.find(symbol);
         if (it == positions_.end())
         {
-            // New position
             return quantity <= limits_.max_position_size;
         }
 
@@ -117,7 +113,6 @@ namespace mm
 
         if (side == OrderSide::BUY)
         {
-            // Check if buying would exceed long limit
             if (net_position + static_cast<int64_t>(quantity) > static_cast<int64_t>(limits_.max_long_position))
             {
                 return false;
@@ -125,14 +120,12 @@ namespace mm
         }
         else
         {
-            // Check if selling would exceed short limit
             if (net_position - static_cast<int64_t>(quantity) < -static_cast<int64_t>(limits_.max_short_position))
             {
                 return false;
             }
         }
 
-        // Check total position size
         Quantity new_total = pos.get_total_position() + quantity;
         if (new_total > limits_.max_position_size)
         {
@@ -148,13 +141,11 @@ namespace mm
 
         PnL total_pnl = get_total_pnl();
 
-        // Check daily loss limit
         if (total_pnl < -limits_.max_daily_loss)
         {
             return false;
         }
 
-        // Check drawdown limit (simplified - would need historical data for proper calculation)
         if (total_pnl < -limits_.max_drawdown)
         {
             return false;
@@ -185,7 +176,6 @@ namespace mm
             all_trades.insert(all_trades.end(), trades.begin(), trades.end());
         }
 
-        // Sort by timestamp
         std::sort(all_trades.begin(), all_trades.end(),
                   [](const Trade &a, const Trade &b)
                   { return a.timestamp < b.timestamp; });
@@ -332,8 +322,6 @@ namespace mm
         return pnl;
     }
 
-    // MMapPositionTracker implementation
-
     MMapPositionTracker::MMapPositionTracker(const std::string &file_path, const PositionLimits &limits)
         : PositionTracker(limits), file_path_(file_path), mmap_ptr_(nullptr), mmap_size_(0), fd_(-1)
     {
@@ -357,14 +345,12 @@ namespace mm
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        // Resize mapping if needed
         size_t required_size = positions_.size() * sizeof(Position);
         if (required_size > mmap_size_)
         {
             resize_mmap(required_size);
         }
 
-        // Copy positions to memory-mapped file
         Position *mmap_positions = static_cast<Position *>(mmap_ptr_);
         size_t i = 0;
         for (const auto &[symbol, position] : positions_)
@@ -372,7 +358,6 @@ namespace mm
             mmap_positions[i++] = position;
         }
 
-        // Ensure data is written to disk
         msync(mmap_ptr_, mmap_size_, MS_SYNC);
     }
 
@@ -385,7 +370,6 @@ namespace mm
             return;
         }
 
-        // Load positions from memory-mapped file
         const Position *mmap_positions = static_cast<const Position *>(mmap_ptr_);
         size_t position_count = mmap_size_ / sizeof(Position);
 
@@ -393,7 +377,7 @@ namespace mm
         for (size_t i = 0; i < position_count; ++i)
         {
             if (mmap_positions[i].symbol != 0)
-            { // Valid position
+            {
                 positions_[mmap_positions[i].symbol] = mmap_positions[i];
             }
         }
@@ -407,7 +391,6 @@ namespace mm
             throw std::runtime_error("Failed to open position file: " + file_path_);
         }
 
-        // Get file size
         struct stat st;
         if (fstat(fd_, &st) == -1)
         {
@@ -426,7 +409,6 @@ namespace mm
             }
         }
 
-        // Map file to memory
         mmap_ptr_ = mmap(nullptr, mmap_size_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
         if (mmap_ptr_ == MAP_FAILED)
         {
@@ -455,4 +437,4 @@ namespace mm
         }
     }
 
-} // namespace mm
+}

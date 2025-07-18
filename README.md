@@ -47,10 +47,8 @@ make -j$(nproc)
 ### Running
 
 ```bash
-# Run the main program with benchmarks
 ./memory_market_maker
 
-# Run tests
 make test
 ```
 
@@ -72,7 +70,7 @@ The system is designed for microsecond quote updates:
 using namespace mm;
 
 // Create order book and position tracker
-OrderBook order_book(1);  // Symbol 1
+OrderBook order_book(1);  
 PositionLimits limits;
 limits.max_position_size = 10000;
 PositionTracker tracker(limits);
@@ -139,7 +137,6 @@ The project includes comprehensive testing capabilities for both unit tests and 
 ### Unit Tests
 
 ```bash
-# Run all unit tests
 make test
 ./memory_market_maker_tests
 

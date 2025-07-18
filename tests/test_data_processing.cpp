@@ -24,7 +24,6 @@ void test_itch_parser_small_sample()
 
     ITCHParser parser(order_books, position_tracker);
 
-    // Test with a small portion of the ITCH file
     std::string itch_file = "data/sample.itch";
     if (!std::filesystem::exists(itch_file))
     {
@@ -32,7 +31,6 @@ void test_itch_parser_small_sample()
         return;
     }
 
-    // Read first 1MB to test parsing
     std::ifstream file(itch_file, std::ios::binary);
     if (!file.is_open())
     {
@@ -88,7 +86,6 @@ void test_itch_parser_small_sample()
     std::cout << "  Processing Time: " << duration.count() << " microseconds" << std::endl;
     std::cout << "  Throughput: " << (messages_processed * 1000000.0 / duration.count()) << " messages/second" << std::endl;
 
-    // Print order book statistics
     auto symbols = order_books.get_active_symbols();
     std::cout << "  Active Symbols: " << symbols.size() << std::endl;
 
@@ -133,7 +130,6 @@ void test_scenario_runner_individual()
         return;
     }
 
-    // Test specific scenarios
     std::vector<std::string> test_scenarios = {"scenario-01", "scenario-03", "scenario-06", "scenario-07"};
 
     for (const auto &scenario_name : test_scenarios)
@@ -147,7 +143,6 @@ void test_scenario_runner_individual()
 
         std::cout << "\nTesting scenario: " << scenario_name << std::endl;
 
-        // Create new objects for each scenario
         OrderBookManager new_order_books;
         PositionTracker new_position_tracker(limits);
         ScenarioRunner new_runner(new_order_books, new_position_tracker);
@@ -164,7 +159,6 @@ void test_scenario_runner_individual()
             std::cout << "  Error: " << result.error_message << std::endl;
         }
 
-        // Print final state for complex scenarios
         if (scenario_name == "scenario-06" || scenario_name == "scenario-07")
         {
             std::cout << "  Final Order Book State:" << std::endl;
@@ -207,14 +201,12 @@ void test_scenario_runner_performance()
         return;
     }
 
-    // Run all scenarios multiple times for performance testing
     const int num_iterations = 10;
 
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < num_iterations; ++i)
     {
-        // Create new objects for each iteration
         OrderBookManager new_order_books;
         PositionTracker new_position_tracker(limits);
         ScenarioRunner new_runner(new_order_books, new_position_tracker);
@@ -223,7 +215,6 @@ void test_scenario_runner_performance()
 
         if (i == 0)
         {
-            // Print summary for first iteration
             size_t passed = 0;
             size_t failed = 0;
             for (const auto &result : results)
@@ -248,7 +239,6 @@ void test_scenario_runner_performance()
     std::cout << "  Total Time: " << duration.count() << " ms" << std::endl;
     std::cout << "  Average Time per Iteration: " << (duration.count() / num_iterations) << " ms" << std::endl;
 
-    // Count total scenarios
     size_t total_scenarios = 0;
     for (const auto &entry : std::filesystem::directory_iterator(scenarios_dir))
     {
@@ -267,7 +257,6 @@ void test_memory_efficiency()
 {
     std::cout << "\n=== Memory Efficiency Test ===" << std::endl;
 
-    // Test with large number of orders
     OrderBook order_book(1);
     PositionLimits limits;
     limits.max_position_size = 1000000;
@@ -294,7 +283,6 @@ void test_memory_efficiency()
 
         order_book.add_order(order_id, price, qty, side);
 
-        // Record some trades
         if (i % 1000 == 0)
         {
             position_tracker.record_trade(1, price, qty, side, order_id);
@@ -329,16 +317,12 @@ int main()
 
     try
     {
-        // Test ITCH parser with small sample
         test_itch_parser_small_sample();
 
-        // Test individual scenarios
         test_scenario_runner_individual();
 
-        // Test scenario runner performance
         test_scenario_runner_performance();
 
-        // Test memory efficiency
         test_memory_efficiency();
 
         std::cout << "\n=== All data processing tests completed! ===" << std::endl;

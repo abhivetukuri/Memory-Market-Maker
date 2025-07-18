@@ -15,20 +15,16 @@ void test_position_tracker_basic()
 
     PositionTracker tracker(limits);
 
-    // Record a buy trade
     assert(tracker.record_trade(1, price_from_dollars(100.00), 1000, OrderSide::BUY, 1));
 
-    // Check position
     const Position *pos = tracker.get_position(1);
     assert(pos != nullptr);
     assert(pos->long_quantity == 1000);
     assert(pos->short_quantity == 0);
     assert(pos->avg_long_price == price_from_dollars(100.00));
 
-    // Record a sell trade
     assert(tracker.record_trade(1, price_from_dollars(100.10), 500, OrderSide::SELL, 2));
 
-    // Check updated position
     pos = tracker.get_position(1);
     assert(pos->long_quantity == 1000);
     assert(pos->short_quantity == 500);
@@ -44,18 +40,14 @@ void test_position_tracker_pnl()
     PositionLimits limits;
     PositionTracker tracker(limits);
 
-    // Buy at $100.00
     tracker.record_trade(1, price_from_dollars(100.00), 1000, OrderSide::BUY, 1);
 
-    // Sell at $100.10 (profit)
     tracker.record_trade(1, price_from_dollars(100.10), 500, OrderSide::SELL, 2);
 
-    // Check realized P&L
     PnL realized_pnl = tracker.get_total_realized_pnl();
     PnL expected_pnl = (price_from_dollars(100.10) - price_from_dollars(100.00)) * 500;
     assert(realized_pnl == expected_pnl);
 
-    // Update unrealized P&L
     tracker.update_unrealized_pnl(1, price_from_dollars(100.05));
     PnL unrealized_pnl = tracker.get_total_unrealized_pnl();
 
